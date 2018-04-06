@@ -87,6 +87,7 @@ const update = ({ db }) => async(req, res) => {
     name: updatedUser.name,
     // email: newUser.email, // avoid for now updating email
     passwd: updatedUser.passwd,
+    role: user.role==='admin' && updatedUser.role==='admin' ? 'admin' : 'user',    
     unit: updatedUser.unit,
     timezone: updatedUser.timezone
   }
