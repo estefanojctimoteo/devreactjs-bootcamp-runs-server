@@ -2,9 +2,10 @@ const login = ({ db, jwt, jwtSecret }) => async(req, res) => {
   const users = await db('users').select().where('email', req.body.email)
   if (users.length === 1) {
     if (users[0].passwd === req.body.passwd) {
+      const keepmeloggedin = req.body.keepmeloggedin
       const { id, name, email, role, unit, timezone } = users[0]
       const user = {
-        id, name, email, role, unit, timezone
+        id, name, email, role, unit, timezone, keepmeloggedin
       }
       const token = jwt.sign(user, jwtSecret)
       res.send({ token })
@@ -25,8 +26,9 @@ const get = ({ db }) => async(req, res) => {
     res.send(users)
   }
 }
-const getMe = () => (req, res) => {
-  res.send(res.locals.user)
+const getMe = ({ db }) => async(req, res) => {
+  const userDB = await db('users').select().where('id', res.locals.user.id)
+  res.send(userDB[0])
 }
 const getOne = ({ db }) => async(req, res) => {
   const { user } = res.locals
@@ -36,7 +38,7 @@ const getOne = ({ db }) => async(req, res) => {
     res.send({ error: true })
   } else {
     const userDB = await db('users').select().where('id', id)
-    res.send(userDB)
+    res.send(userDB[0])
   }
 }
 const remove = ({ db }) => async(req, res) => {
@@ -84,11 +86,15 @@ const update = ({ db }) => async(req, res) => {
   const updatedUser = req.body
   let { id } = req.params
   const userToUpdate = {
-    name: updatedUser.name,
-    // email: newUser.email, // avoid for now updating email
-    passwd: updatedUser.passwd,
-    unit: updatedUser.unit,
-    timezone: updatedUser.timezone
+  }
+  const fields = ['name', 'role', 'email', 'passwd', 'unit', 'timezone']
+  fields.forEach(field => {
+    if(updatedUser[field]){
+      userToUpdate[field] = updatedUser[field]
+    }
+  })
+  if(user.role ==='user'){
+    userToUpdate['role'] = 'user'
   }
   // creating new account - without token
   if (user.role === 'user' && user.id != id) {
@@ -101,12 +107,44 @@ const update = ({ db }) => async(req, res) => {
 
   res.send(userToUpdate)
 }
+const find = ({ db }) => async(req, res) => {
+  const { user } = res.locals
+  let name = req.params.name
+  if (user.role === 'admin') {
+    const users = await db('users').select().where('name', 'like', '%'+name+'%')
+    res.send(users)
+  } else {
+    const users = await db('users').select().where('email', user.email)
+    res.send(users)
+  }
+}
+
+const getWithDelay = ({ db }) => async(req, res) => {
+  const { user } = res.locals
+  let seconds = req.params.seconds
+
+  let users =
+    (user.role === 'admin') ?
+      (await db('users').select()) :
+      (await db('users').select().where('email', user.email))
+    
+  var count = 0
+  var intervalObject = setInterval(function () { 
+          count++; 
+          if (count >= seconds) { 
+              res.send(users)
+              clearInterval(intervalObject)
+          } 
+      }, 1000)
+}
 
 module.exports = {
   login,
   get,
   getMe,
   getOne,
+  find,
+  getWithDelay,
   remove,
   create,
   update

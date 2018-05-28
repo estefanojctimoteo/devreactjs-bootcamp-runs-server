@@ -10,6 +10,7 @@ const jwtSecret = 'DevPlenoRocks!'
 router.use(auth.checkJWT({ jwt, jwtSecret }))
 router.post('/', controller.create({ db }))
 router.get('/', controller.get({ db }))
+router.get('/user/:id', controller.getByUserId({ db }))
 router.patch('/:id', controller.update({ db }))
 router.get('/:id', controller.getOne({ db }))
 router.delete('/:id', controller.remove({ db }))

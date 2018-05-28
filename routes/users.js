@@ -12,7 +12,9 @@ router.post('/', auth.injectUserFromToken({ jwt, jwtSecret }), controller.create
 
 router.use(auth.checkJWT({ jwt, jwtSecret }))
 router.get('/', controller.get({ db }))
+router.get('/withdelay/:seconds', controller.getWithDelay({ db }))
 router.get('/me', controller.getMe({ db }))
+router.get('/find/:name', controller.find({ db }))
 router.patch('/:id', controller.update({ db }))
 router.get('/:id', controller.getOne({ db }))
 router.delete('/:id', controller.remove({ db }))
